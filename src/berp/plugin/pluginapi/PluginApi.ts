@@ -123,12 +123,58 @@ export class PluginApi {
       }
     }, 1000)
   }
-  public async autoConnect(accountEmail: string, realmId: number, bypass = false): Promise<boolean> {
+  public async autoConnect(accountEmail: string, realmId: number, bypass = false, serverHost = '192.168.2.27', serverPort = 19132): Promise<boolean> {
     return new Promise(async (resX) => {
       if (!this._temp && !bypass) {
         this._logger.error("AutoConnect is only allowed in the onLoaded() method!")
         
         return resX(false)
+      }
+      if (realmId === 99999) {
+      const ip = serverHost
+      const port = serverPort
+      const foundAccounts = new Map<string, AccountInfo>()
+      const accounts = await this._berp
+        .getAuthProvider()
+        .getCache()
+        .getAllAccounts()
+      for (const account of accounts) {
+        foundAccounts.set(account.username, account)
+      }
+      if (!foundAccounts.has(accountEmail)) {
+        this._logger.error(`No account found with the email "${accountEmail}"`)
+
+        return resX(false)
+      }
+      const account = accounts.find(a => a.username === accountEmail)
+            if (!account) {
+              return this._berp.getNetworkManager().getLogger()
+                .error(`Failed to select account "${accountEmail}"`)
+            }
+            this._logger.info("DEGUb " + account.username);
+      let net = this._berp.getNetworkManager().getAccounts()
+        .get(account.username)
+      if (!net) {
+        net = this._berp.getNetworkManager().create(account)
+      }
+      try {
+      this._logger.info("Attempting auto-connection with server " + serverHost);
+      net.newConnection(serverHost, serverPort, {
+        activeSlot: 1,
+        id: serverPort,
+        clubId: serverPort,
+        name: serverHost,
+        owner: "unkown",
+        ownerUUID: "unkown",
+      } as any)
+    } catch (error) {
+      this._berp.getNetworkManager().getLogger()
+        .error(`Failed to select account for realm connection...\n`, error)
+        return resX(false)
+    }
+      this._hasConnected = true
+
+      return resX(true)
       }
       const foundAccounts = new Map<string, AccountInfo>()
       const accounts = await this._berp
